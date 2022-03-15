@@ -1,5 +1,5 @@
-import React, { useState,useEffect } from 'react'
-import { BrowserRouter as Router, Switch, Route, useLocation } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Switch, Route, useLocation } from 'react-router-dom'
 import NavBar from '@/components/NavBar'
 import { ConfigProvider } from 'zarm'
 import zhCN from 'zarm/lib/config-provider/locale/zh_CN'
