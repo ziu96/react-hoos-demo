@@ -7,7 +7,7 @@ import 'zarm/dist/zarm.css'
 
 import routes from '@/router'
 function App() {
-    const location = useLocation() // 拿到 location 实例 react-router-dom 中方法
+    const location = useLocation() // 拿到 location 实例 react-router-dom 中的 Router Hooks方法
     const { pathname } = location // 获取当前路径
     const needNav = ['/', '/data', '/user'] // 需要底部导航栏的路径
     const [showNav, setShowNav] = useState(false) // 是否展示 Nav

@@ -6,8 +6,8 @@ import CustomIcon from '../CustomIcon'
 import s from './style.module.less'
 
 const NavBar = ({ showNav }) => {
-    const [activeKey, setActiveKey] = useState(useLocation().pathname)
-    const history = useHistory()
+    const [activeKey, setActiveKey] = useState(useLocation().pathname) // 拿到 location 实例 react-router-dom 中的 Router Hooks方法
+    const history = useHistory() // useHistory可以直接访问到history,而不再需要通过 props 访问
 
     const changeTab = path => {
         setActiveKey(path)
