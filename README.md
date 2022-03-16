@@ -349,7 +349,355 @@ export default Index;
 ### 插槽
     补充中
 # React-Hooks
-补充中
+## useState 数据存储，派发更新
+
+**基本使用**：seState的参数可以是一个具体的值，也可以是一个函数用于判断复杂的逻辑，函数返回作为初始值
+
+**回调**：usestate 返回一个数组，数组第一项用于读取此时的state值 ，第二项为派发数据更新，组件渲染的函数，函数的参数即是需要更新的值
+
+```javascript
+// 作为初始值 使用
+const DemoState = (props) => {
+   /* number为此时state读取值 ，setNumber为派发更新的函数 */
+   let [number, setNumber] = useState(0) /* 0为初始值 */
+   return (<div>
+       <span>{ number }</span>
+       <button onClick={ ()=> {
+         setNumber(number+1)
+         console.log(number) /* 这里的number是不能够及时改变的  */
+       } } ></button>
+   </div>
+   
+// 作为函数返回使用
+const a =1 
+const DemoState = (props) => {
+   /*  useState 第一个参数如果是函数 则处理复杂的逻辑 ，返回值为初始值 */
+   let [number, setNumber] = useState(()=>{
+      // number
+      return a===1 ? 1 : 2
+   }) /* 1为初始值 */
+   return (<div>
+       <span>{ number }</span>
+       <button onClick={ ()=>setNumber(number+1) } ></button>
+   </div>)
+}
+
+```
+
+**注意**：useState作为能够触发组件重新渲染的hooks,我们在使用useState的时候要特别注意的是，useState派发更新函数的执行，就会让整个function组件从头到尾执行一次，所以需要配合useMemo，usecallback等api配合使用，这就是为什么滥用hooks会带来负作用的原因之一了。
+
+<br/>
+
+## useEffect  组件更新副作用钩子
+
+**基本使用**：如果你想在function组件中，当组件完成挂载，dom渲染完成，做一些操纵dom,请求数据，那么useEffect是一个不二选择，如果我们需要在组件初次渲染的时候请求数据，那么useEffect可以充当class组件中的 componentDidMoun
+
+**执行顺序**：组件更新挂载完成 -> 浏览器dom 绘制完成 -> 执行useEffect回调 
+
+**注意**：如果不给useEffect执行加入限定条件，只要更新一次state或者props都会触发useEffect执行 所以需要加入限制条件
+
+```javascript
+/* 模拟数据交互 */
+function getUserInfo(a){
+    return new Promise((resolve)=>{
+        setTimeout(()=>{ 
+           resolve({
+               name:a,
+               age:16,
+           }) 
+        },500)
+    })
+}
+
+const Demo = ({ a }) => {
+    const [ userMessage , setUserMessage ]= useState({})
+    const div= useRef()
+    const [number, setNumber] = useState(0)
+    /* 模拟事件监听处理函数 */
+    const handleResize =()=>{}
+    /* useEffect使用 ，这里如果不加限制 ，会是函数重复执行，陷入死循环*/
+    useEffect(()=>{
+        /* 请求数据 */
+       getUserInfo(a).then(res=>{
+           setUserMessage(res)
+       })
+       /* 操作dom  */
+       console.log(div.current) /* div */
+       /* 事件监听等 */
+        window.addEventListener('resize', handleResize)
+    /* 只有当props->a和state->number改变的时候 ,useEffect副作用函数重新执行 ，
+    如果此时数组为空[]，证明函数只有在初始化的时候执行一次相当于componentDidMount */
+    },[ a ,number ])
+    return (<div ref={div} >
+        <span>{ userMessage.name }</span>
+        <span>{ userMessage.age }</span>
+        <div onClick={ ()=> setNumber(1) } >{ number }</div>
+    </div>)
+}
+
+
+// 组件销毁阶段如果需要做一些取消dom监听，
+// 清除定时器等操作那么我们可以在useEffect函数第一个参数，结尾返回一个函数，用于清除这些副作用
+
+const Demo = ({ a }) => {
+    /* 模拟事件监听处理函数 */
+    const handleResize =()=>{}
+    useEffect(()=>{
+       /* 定时器 延时器等 */
+       const timer = setInterval(()=>console.log(666),1000)
+       /* 事件监听 */
+       window.addEventListener('resize', handleResize)
+       /* 此函数用于清除副作用 */
+       return function(){
+           clearInterval(timer) 
+           window.removeEventListener('resize', handleResize)
+       }
+    },[ a ])
+    return (<div  >
+    </div>)
+}
+
+```
+
+ useEffect是不能直接用 async await 语法糖的,可以使用立即执行函数 或者  可以对effect进行一层包装
+
+```javascript
+//在包装一次
+const asyncEffect = (callback, deps)=>{
+   useEffect(()=>{
+       callback()
+   },deps)
+}
+// 立即执行
+useEffect(() => {
+    (async () => {
+      const data = await getList()
+      console.log('data', data)
+      setData(data)
+    })()
+  }, [query])
+```
+
+## useLayoutEffect 渲染更新之前的 useEffect
+
+执行顺序：组件更新挂载完成 -> 执行useLayoutEffect回调-> 浏览器dom 绘制完成
+
+例子
+
+```javascript
+const DemoUseLayoutEffect = () => {
+    const target = useRef()
+    useLayoutEffect(() => {
+        /*我们需要在dom绘制之前，做一些操作*/
+
+    }, []);
+    return (
+        <div >
+            <span ref={ target } className="animate"></span>
+        </div>
+    )
+}
+
+```
+
+## useRef 获取元素 ,缓存数据
+
+基本使用：和传统的class组件ref一样，react-hooks 也提供获取元素方法 useRef,它有一个参数可以作为缓存数据的初始值，返回值可以被dom元素ref标记，可以获取被标记的元素节点.
+
+```javascript
+const DemoUseRef = ()=>{
+    const dom= useRef(null)
+    const handerSubmit = ()=>{
+        /*  <div >表单组件</div>  dom 节点 */
+        console.log(dom.current)
+    }
+    return <div>
+        {/* ref 标记当前dom节点 */}
+        <div ref={dom} >表单组件</div>
+        <button onClick={()=>handerSubmit()} >提交</button> 
+    </div>
+}
+
+```
+
+高阶使用：缓存数据
+
+暂时略
+
+## useContext
+
+理解：类似Vue中 祖先组件向下传值 孙子组件 获取传下的内容
+
+```javascript
+//上级组件 使用React.createContext创建初始值 在通过.Provider改变初始值
+// index.js
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./App";
+// 创建两个context
+export const UserContext = React.createContext();
+export const TokenContext = React.createContext();
+ReactDOM.render(
+  <UserContext.Provider value={{ id: 1, name: "chimmy", age: "20" }}>
+    <TokenContext.Provider value="我是token">
+      <App />
+    </TokenContext.Provider>
+  </UserContext.Provider>,
+  document.getElementById("root")
+);
+// app.js
+import React, { useContext } from "react";
+import { UserContext, TokenContext } from "./index";
+
+function Example() {
+  let user = useContext(UserContext); // 使用useContext拿到祖先组件根据上下文传递下来的值
+  let token = useContext(TokenContext);// 使用useContext拿到祖先组件根据上下文传递下来的值
+  console.log("UserContext", user);
+  console.log("TokenContext", token);
+  return (
+    <div>
+      name:{user?.name},age:{user?.age}
+    </div>
+  );
+}
+export default Example;
+
+```
+
+## useReducer
+
+```javascript
+const [state, dispatch] = useReducer(reducer, initialArg, init);
+```
+
+基本使用：useState 的替代方案。它接收一个形如 (state, action) => newState 的 reducer，并返回当前的 state 以及与其配套的 dispatch 方法。
+
+```javascript
+//useState 方式
+function Counter({initialCount}) {
+  const [count, setCount] = useState(initialCount);
+  return (
+    <>
+      Count: {count}
+      <button onClick={() => setCount(initialCount)}>Reset</button>
+      <button onClick={() => setCount(prevCount => prevCount - 1)}>-</button>
+      <button onClick={() => setCount(prevCount => prevCount + 1)}>+</button>
+    </>
+  );
+}
+// useReducer方式
+const initialState = {count: 0};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment':
+      return {count: state.count + 1};
+    case 'decrement':
+      return {count: state.count - 1};
+    default:
+      throw new Error();
+  }
+}
+
+function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return (
+    <>
+      Count: {state.count}
+      <button onClick={() => dispatch({type: 'decrement'})}>-</button>
+      <button onClick={() => dispatch({type: 'increment'})}>+</button>
+    </>
+  );
+}
+
+```
+
+## useMemo
+
+理解：相当于把父组件需要传递的参数做了一个标记，无论父组件其他状态更新任何值，都不会影响要传递给子组件的对象，子组件只会在标记的值上 执行重新渲染
+
+```javascript
+import React, { useEffect, useState, useMemo } from 'react'
+
+function Child({ data }) {
+  useEffect(() => {
+    console.log('查询条件：', data)
+  }, [data])
+
+  return <div>子组件</div>
+}
+
+
+function App() {
+
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [kw, setKw] = useState('')
+ //使用前  除了 name 和 phone值改变 kw值改变也会重新渲染子组件 
+  const data = {
+    name,
+    phone
+  }
+  // 使用useMemo 将 data 包装一下，告诉 data 它需要监听的值 只有在name 和 phone值改变 才会重新渲染子组件
+  const data = useMemo(() => ({
+    name,
+    phone
+  }), [name, phone])
+
+  return (
+    <div className="App">
+      <input onChange={(e) => setName(e.target.value)} type="text" placeholder='请输入姓名' />
+      <input onChange={(e) => setPhone(e.target.value)} type="text" placeholder='请输入电话' />
+      <input onChange={(e) => setKw(e.target.value)} type="text" placeholder='请输入关键词' />
+      <Child data={data} />
+    </div>
+  )
+}
+
+export default App
+```
+
+## useCallback
+
+理解：react 官网解释useCallback中 有一项这样的解释** useCallback(fn, deps) 相当于 useMemo(() => fn, deps)。**
+
+那么修改上面例子代码
+
+```javascript
+import React, { useEffect, useState, useCallback } from 'react'
+
+function Child({ callback }) {
+  useEffect(() => {
+    callback()
+  }, [callback])
+
+  return <div>子组件</div>
+}
+
+
+function App() {
+
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [kw, setKw] = useState('')
+
+  const callback = useCallback(() => { // 只会在初始化的时候执行一次 后面name,phone,kw在改变都不会重新渲染子组件
+      console.log('我是callback')
+  }, [])
+
+  return (
+    <div className="App">
+      <input onChange={(e) => setName(e.target.value)} type="text" placeholder='请输入姓名' />
+      <input onChange={(e) => setPhone(e.target.value)} type="text" placeholder='请输入电话' />
+      <input onChange={(e) => setKw(e.target.value)} type="text" placeholder='请输入关键词' />
+      <Child callback={callback} />
+    </div>
+  )
+}
+
+export default App
+```
+
 # React-router
 ## React Router 库中几个不同的 npm 依赖包
 
