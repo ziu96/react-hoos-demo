@@ -21,7 +21,7 @@ export default defineConfig({
     ],
     css: {
         modules: {
-            localsConvention: 'dashesOnly'
+            localsConvention: 'dashesOnly' // css类名配置hash名称 防止名称重复
         },
         preprocessorOptions: {
             less: {
@@ -40,7 +40,7 @@ export default defineConfig({
       proxy: {
         '/api': {
           // 当遇到 /api 路径时，将其转换成 target 的值
-          target: 'http://47.99.134.126:7009/api/',
+          target: 'http://47.99.134.126:7009/',
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api/, '') // 将 /api 重写为空
         }
