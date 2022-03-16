@@ -17,7 +17,8 @@ const Login = () => {
 
     const isType = type === 'login'
 
-    //  验证码变化，回调方法
+    //  验证码变化，回调方法 不会受到其他值变化影响
+    // const handleChange = setCaptcha(captcha)
     const handleChange = useCallback(captcha => {
         setCaptcha(captcha)
     }, [])
@@ -58,7 +59,7 @@ const Login = () => {
             Toast.show(err.msg)
         }
     }
-
+    // 只有在type发生改变时执行
     useEffect(() => {
         document.title = isType ? '登录' : '注册'
     }, [type])
